@@ -1,0 +1,233 @@
+import math
+import random
+
+from PyQt5 import QtCore, QtGui, uic
+from PyQt5.QtWidgets import QFileDialog
+from PyQt5.QtGui import *
+from PyQt5.QtWidgets import *
+import cv2
+from PyQt5.QtCore import QTimer
+import start
+import ui_main
+import sys
+# from pygame import mixer
+import time
+import numpy as np
+from PyQt5.Qt import QUrl
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QMediaPlaylist
+from PyQt5.QtWidgets import QApplication, QWidget
+
+# 步行像素点，y,x,,x-40,y-60,特定点19，28，31，33，35，38，50，54
+projectsteep = [[140, 70], [135, 200], [135, 235], [135, 270], [135, 310], [135, 345], [135, 380],
+                [135, 415], [135, 455], [135, 491], [135, 530], [170, 530], [205, 530], [245, 530],
+                [280, 530], [390, 530], [425, 530], [425, 567], [425, 605], [425, 642], [425, 682],
+                [425, 721], [425, 752], [470, 752], [508, 752], [508, 790], [508, 830], [508, 865],
+                [540, 865], [592, 820], [592, 782], [592, 750], [592, 670], [592, 639], [592, 595],
+                [592, 560], [592, 520], [592, 483], [630, 483], [692, 483], [731, 483], [731, 448],
+                [731, 410], [731, 372], [731, 335], [731, 300], [731, 261], [695, 261], [655, 261],
+                [620, 261], [585, 261], [585, 228], [585, 190], [585, 150], [555, 150]]
+
+for i in range(55):
+    projectsteep[i][0], projectsteep[i][1] = projectsteep[i][1], projectsteep[i][0]
+
+
+class ui_main1:
+    def __init__(self):
+        img = cv2.imread("./main_map.jpg")
+        cv2.imwrite("./map_temp.jpg", img)
+        self.singshow = False
+        self.projectn = 0
+        self.projectMovei = 100
+        self.projectMovej = 10
+        self.projectsteep = 1
+        self.pointtemp = [0, 0]
+        self.pointtemp1 = [70, 140]
+        self.n = 0
+        self.num = 0
+        self.tzsign = False
+        self.uiA = start.Ui_MainWindow()
+        self.uimain = ui_main.Ui_map()
+        self.uiA.pushButton_2.setStyleSheet('#pushButton_2{border-image:url(start1.png);}')
+        self.uimain.endimg.setStyleSheet('#endimg{border-image:url(end1.png);}')
+        self.uimain.endimg.clicked.connect(self.renewdata)
+        self.uiA.pushButton_2.clicked.connect(self.show_B)
+        self.timer1 = QTimer()
+        self.timer1.timeout.connect(self.timer_timeout)
+        self.uimain.pushButton.clicked.connect(self.tzbutton)
+        self.uimain.img.clicked.connect(self.enab)
+
+        self.playlist = QMediaPlaylist()  # 1
+        self.player = QMediaPlayer()
+        self.player.setPlaylist(self.playlist)
+        self.playlist.addMedia(QMediaContent(QUrl.fromLocalFile('bgm2.wav')))  # 2
+        # self.playlist.addMedia(QMediaContent(QUrl.fromLocalFile('/Users/louis/Downloads/music2.mp3')))
+        # self.playlist.addMedia(QMediaContent(QUrl.fromLocalFile('/Users/louis/Downloads/music3.mp3')))
+        self.playlist.setPlaybackMode(QMediaPlaylist.Loop)  # 3
+        self.playlist.setCurrentIndex(2)  # 4
+        self.player.setVolume(80)  # 5
+        self.player.play()
+
+        self.player1 = QMediaPlayer()  # 1
+        self.media_content = QMediaContent(QUrl.fromLocalFile('bgm1.mp3'))  # 2
+        self.player1.setMedia(self.media_content)  # 3
+        self.player1.setVolume(80)  # 4
+
+
+        self.timer2 = QTimer()
+        self.timer2.timeout.connect(self.projectMove)
+        self.timer1.start(50)
+        self.timer2.start(60)
+
+        self.uiA.show()
+
+    def renewdata(self):
+        img = cv2.imread("./main_map.jpg")
+        cv2.imwrite("./map_temp.jpg", img)
+        self.uimain.map.setStyleSheet('#map{border-image:url(map_temp.jpg);}')
+        self.singshow = False
+        self.projectn = 0
+        self.projectMovei = 100
+        self.projectMovej = 10
+        self.projectsteep = 1
+        self.pointtemp = [0, 0]
+        self.pointtemp1 = [70, 140]
+        self.n = 0
+        self.num = 0
+        self.tzsign = False
+        self.uimain.endimg.setVisible(False)
+        self.uimain.project.setGeometry(QtCore.QRect(30, 80, 100, 74))
+        self.uimain.pushButton.setEnabled(True)
+        self.uimain.img.setStyleSheet('#img{border-image:url(3.png);}')
+        self.uimain.img.setVisible(False)
+        self.uimain.img.setEnabled(False)
+
+    # def newmove(self):
+    #     self.uimain.img.setVisible(False)
+    #     self.uimain.project.setGeometry(QtCore.QRect(self.pointtemp[0] - 40, self.pointtemp[1] - 60, 100, 74))
+
+    def show_B(self):
+        self.uiA.close()
+        self.uimain.show()
+
+    def enab(self):
+        self.uimain.img.setVisible(False)
+        self.uimain.img.setEnabled(False)
+        self.uimain.pushButton.setEnabled(True)
+
+    def tzbutton(self):
+        if not self.tzsign:
+            self.tzsign = True
+
+    def timer_timeout(self):
+        if self.tzsign:
+            if self.num < 39:
+                self.n = random.randint(1, 6)
+            if self.n > 6:
+                self.n = 1
+            if self.n == 1:
+                self.uimain.tz.setStyleSheet('#tz{border-image:url(./tz/dice1.jpg);}')
+            elif self.n == 2:
+                self.uimain.tz.setStyleSheet('#tz{border-image:url(./tz/dice2.jpg);}')
+            elif self.n == 3:
+                self.uimain.tz.setStyleSheet('#tz{border-image:url(./tz/dice3.jpg);}')
+            elif self.n == 4:
+                self.uimain.tz.setStyleSheet('#tz{border-image:url(./tz/dice4.jpg);}')
+            elif self.n == 5:
+                self.uimain.tz.setStyleSheet('#tz{border-image:url(./tz/dice5.jpg);}')
+            elif self.n == 6:
+                self.uimain.tz.setStyleSheet('#tz{border-image:url(./tz/dice6.jpg);}')
+            self.uimain.tz.setVisible(True)
+            self.uimain.pushButton.setEnabled(False)
+            self.num += 1
+
+        if self.num >= 40:
+            print(self.n)
+            self.projectn = self.n
+            self.num = 0
+            self.tzsign = False
+            time.sleep(1)
+            self.uimain.tz.setVisible(False)
+            self.uimain.pushButton.setEnabled(True)
+            self.projectMovei = 0
+            self.projectMovej = 1
+
+    def projectMove(self):
+        if self.projectMovei < self.projectn:
+            if self.projectsteep > 54:
+                time.sleep(2)
+                self.uimain.endimg.setVisible(True)
+            else:
+                point1 = projectsteep[self.projectsteep - 1]
+                point2 = projectsteep[self.projectsteep]
+                if self.projectMovej <= 9:  # 走九次
+                    self.pointtemp = [point2[0] - point1[0], point2[1] - point1[1]]
+                    self.pointtemp1 = [point1[0] + self.pointtemp[0] * 1 / 10, point1[1] + self.pointtemp[1] * 1 / 10]
+                    self.pointtemp1 = list(map(int, self.pointtemp1))
+                    self.uimain.project.setGeometry(
+                        QtCore.QRect(self.pointtemp1[0] - 40, self.pointtemp1[1] - 60, 100, 74))
+                    # time.sleep(0.05)  # 5毫秒走一格
+                    self.projectMovej = self.projectMovej + 1
+                else:
+                    self.uimain.project.setGeometry(QtCore.QRect(point2[0] - 40, point2[1] - 60, 100, 74))
+                    img = cv2.imread("./map_temp.jpg")
+                    img[point2[1] - 25:point2[1], point2[0]:point2[0] + 25] = [205, 0, 0]
+                    cv2.imwrite("./map_temp.jpg", img)
+                    self.uimain.map.setStyleSheet('#map{border-image:url(map_temp.jpg);}')
+                    self.projectMovej = 1
+                    self.projectMovei = self.projectMovei + 1
+                    # 特定点19，28，31，33，35，38，50，54
+                    if self.projectsteep == 19:
+                        self.player1.play()  # 5
+                        self.uimain.pushButton.setEnabled(False)
+                        self.uimain.img.setStyleSheet('#img{border-image:url(1.png);}')
+                        self.uimain.img.setVisible(True)
+                        self.uimain.img.setEnabled(True)
+                    elif self.projectsteep == 28:
+                        self.player1.play()  # 5
+                        self.uimain.pushButton.setEnabled(False)
+                        self.uimain.img.setStyleSheet('#img{border-image:url(2.png);}')
+                        self.uimain.img.setVisible(True)
+                        self.uimain.img.setEnabled(True)
+                    elif self.projectsteep == 31:
+                        self.player1.play()  # 5
+                        self.uimain.pushButton.setEnabled(False)
+                        self.uimain.img.setStyleSheet('#img{border-image:url(3.png);}')
+                        self.uimain.img.setVisible(True)
+                        self.uimain.img.setEnabled(True)
+                    elif self.projectsteep == 35:
+                        self.player1.play()  # 5
+                        self.uimain.pushButton.setEnabled(False)
+                        self.uimain.img.setStyleSheet('#img{border-image:url(4.png);}')
+                        self.uimain.img.setVisible(True)
+                        self.uimain.img.setEnabled(True)
+                    elif self.projectsteep == 31:
+                        self.player1.play()  # 5
+                        self.uimain.pushButton.setEnabled(False)
+                        self.uimain.img.setStyleSheet('#img{border-image:url(5.png);}')
+                        self.uimain.img.setVisible(True)
+                        self.uimain.img.setEnabled(True)
+                    elif self.projectsteep == 38:
+                        self.player1.play()  # 5
+                        self.uimain.pushButton.setEnabled(False)
+                        self.uimain.img.setStyleSheet('#img{border-image:url(6.png);}')
+                        self.uimain.img.setVisible(True)
+                        self.uimain.img.setEnabled(True)
+                    elif self.projectsteep == 50:
+                        self.player1.play()  # 5
+                        self.uimain.pushButton.setEnabled(False)
+                        self.uimain.img.setStyleSheet('#img{border-image:url(7.png);}')
+                        self.uimain.img.setVisible(True)
+                        self.uimain.img.setEnabled(True)
+                    elif self.projectsteep == 54:
+                        self.player1.play()  # 5
+                        self.uimain.pushButton.setEnabled(False)
+                        self.uimain.img.setStyleSheet('#img{border-image:url(8.png);}')
+                        self.uimain.img.setVisible(True)
+                        self.uimain.img.setEnabled(True)
+                    self.projectsteep = self.projectsteep + 1
+
+
+app = QApplication(sys.argv)
+window = ui_main1()
+
+sys.exit(app.exec_())
